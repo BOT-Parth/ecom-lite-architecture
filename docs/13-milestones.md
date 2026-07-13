@@ -54,3 +54,30 @@ Verification:
 - Login verified
 - Invalid credentials verified
 - JWT protected profile verified
+
+## M1.3 Authorization RBAC Foundation
+
+Status: Completed
+
+Implemented:
+
+- Platform permission resolution.
+- Store permission resolution.
+- RBAC middleware.
+- Context-based authorization.
+- Platform and store permission isolation.
+
+Architecture Decisions:
+
+- Platform permissions and store permissions are separate contexts.
+- Users receive permissions through roles.
+- Store permissions require store membership.
+- Authorization logic is centralized in permission services.
+
+Verification:
+
+- Platform permission access verified.
+- Store permission access verified.
+- Unauthorized users rejected.
+- Context isolation verified.
+- Missing store context rejected.

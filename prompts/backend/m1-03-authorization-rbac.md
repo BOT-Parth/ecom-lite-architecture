@@ -2,17 +2,30 @@
 
 ## Objective
 
-Implement authorization foundation based on the approved role and permission architecture.
+Implement the authorization foundation for E-Com Lite.
 
 Authentication already exists.
 
-This milestone adds authorization.
+This milestone adds permission-based authorization using the approved RBAC architecture.
 
 ---
 
-# Architecture Model
+# Source of Truth
 
-Authorization follows:
+Follow:
+
+- architecture/docs/03-actors.md
+- architecture/docs/04-permission-model.md
+- architecture/docs/06-database-design.md
+- architecture/prompts/backend/onboarding.md
+
+Do not redesign the permission model.
+
+---
+
+# Authorization Model
+
+Authorization is based on:
 
 User
 
@@ -28,21 +41,72 @@ Role
 
 Permission
 
-Platform context:
+There are two separate contexts.
+
+---
+
+# Platform Context
+
+Relationship:
+
+User
+
+↓
 
 UserPlatformRole
-|
+
+↓
+
 PlatformRole
-|
+
+↓
+
 PlatformPermission
 
-Store context:
+Example:
+
+SUPER_ADMIN
+
+Permissions:
+
+- CREATE_STORE
+- APPROVE_STORE
+
+---
+
+# Store Context
+
+Relationship:
+
+User
+
+↓
 
 UserStoreMembership
-|
+
+↓
+
 StoreRole
-|
+
+↓
+
 StorePermission
+
+Example:
+
+STORE_OWNER
+
+STORE_STAFF
+
+CUSTOMER
+
+---
+
+# Important Rule
+
+Do not mix platform permissions and store permissions.
+
+A user permission depends on the context being checked.
 
 ---
 
@@ -50,61 +114,80 @@ StorePermission
 
 Implement:
 
-## Permission Resolution
+## 1. Permission Resolution Service
 
 Create centralized permission checking logic.
 
-The system should be able to answer:
+The system must answer:
 
 "Does this user have this permission in this context?"
 
----
+Examples:
 
-## Middleware
+Platform:
 
-Create authorization middleware for:
+Does user have APPROVE_STORE?
 
-Platform permissions.
+Store:
 
-Example:
-
-requirePlatformPermission()
-
-Store permissions.
-
-Example:
-
-requireStorePermission()
+Does user have MANAGE_PRODUCTS for Store A?
 
 ---
 
-## Required Behavior
+## 2. Authorization Middleware
 
-A user may have:
+Create reusable middleware.
 
-Platform permissions.
+Examples:
 
-Store permissions.
+requirePlatformPermission(permission)
 
-Do not mix contexts.
+requireStorePermission(permission)
+
+Middleware should:
+
+- receive required permission
+- identify authenticated user
+- check permission
+- allow or reject request
 
 ---
 
-# Requirements
+## 3. Permission Utilities
+
+Create reusable helpers if required.
+
+Permission logic must not be duplicated.
+
+---
+
+# Architecture Rules
 
 Follow:
 
 Routes
+
 ↓
+
 Controllers
+
 ↓
+
 Services
+
 ↓
+
 Repositories
 
-Controllers must not calculate permissions.
+Rules:
 
-Permission logic belongs in services/utilities.
+Controllers must not:
+
+- query roles
+- query permissions
+- calculate access
+
+Services/utilities own permission logic.
 
 ---
 
@@ -114,31 +197,69 @@ Do not implement:
 
 - Store APIs
 - Store creation
-- Membership management
-- Frontend
-- UI permissions
+- Store approval
+- Membership APIs
+- Product APIs
+- Frontend changes
+
+Only implement authorization foundation.
 
 ---
 
 # Verification
 
+Perform verification for:
+
+## Platform Permission
+
 Test:
 
-- SUPER_ADMIN permission access.
-- User without permission rejected.
-- Store role permission resolution.
-- Wrong context rejected.
+- SUPER_ADMIN with permission succeeds.
+- User without permission fails.
 
 ---
 
-# Reporting
+## Store Permission
+
+Test:
+
+- STORE_OWNER permission succeeds.
+- STORE_STAFF permission succeeds only for assigned permissions.
+- User without store membership fails.
+
+---
+
+## Context Isolation
+
+Verify:
+
+- Platform permission cannot be used as store permission.
+- Store permission cannot be used as platform permission.
+
+---
+
+# Documentation
+
+If architecture-relevant decisions are introduced:
+
+Update documentation.
+
+Do not modify architecture without approval.
+
+---
+
+# Final Report
 
 Provide:
 
-1. Files changed
-2. Permission flow explanation
-3. Middleware flow explanation
-4. Verification results
-5. Known limitations
+1. Files changed.
+2. Permission flow explanation.
+3. Middleware flow explanation.
+4. Verification performed.
+5. Results.
+6. Known limitations.
+7. Code walkthrough.
 
-Stop after completion and request approval.
+After completion:
+
+Stop and request approval before moving to the next milestone.

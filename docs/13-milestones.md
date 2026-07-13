@@ -93,3 +93,41 @@ Verification:
 - Duplicate slug protection tested
 - Membership creation tested
 - Public directory tested
+
+## Milestone 2 — Catalog & Stock Foundation
+
+### M2.1 Catalog Foundation ✅
+
+Completed:
+
+- Category model
+- Product model
+- Category CRUD endpoints
+- Product CRUD endpoints
+- Public catalog listings
+
+Business Rules:
+- Product category relation is optional.
+- Category deletion sets category relation to null (does not delete products).
+
+Verification:
+- Category CRUD tests passed
+- Product CRUD tests passed
+- SetNull cascade deletion tested
+
+### M2.2 Inventory Foundation ✅
+
+Completed:
+
+- Database model: Inventory
+- Product one-to-one relationship
+- Retrieve stock endpoints
+- Update stock endpoints
+- Store permission isolation (requires MANAGE_PRODUCTS)
+- Non-negative integer quantity validation
+
+Verification:
+- Prisma validation passed
+- Migration applied successfully
+- Automated test suite passed (public retrieve, owner update, cross-store check, regular user block, negative quantity reject, DB cleanup)
+

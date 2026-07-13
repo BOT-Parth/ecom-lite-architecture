@@ -1,83 +1,95 @@
-## M1.1 Database Foundation
+## Milestone 1 — Identity & Platform Foundation
 
-Status: Completed
+### M1.1 Database Foundation ✅
 
-Implemented:
+Completed:
 
-- Prisma ORM setup.
-- PostgreSQL database connection.
-- Initial database schema.
-- User model.
-- Platform role and permission models.
-- Store role and permission models.
-- Store request model.
-- User-store membership model.
-- Database relationships and constraints.
-- Initial seed system.
-
-Architecture Decisions:
-
-- Platform roles and store roles are separated.
-- Store ownership is represented through UserStoreMembership using STORE_OWNER role.
-- Store approval status and operational status are separated.
-- Permissions are assigned through roles.
-- Users receive permissions through their assigned role in a specific context.
+- Prisma database setup
+- User model
+- Platform roles
+- Platform permissions
+- Store roles
+- Store permissions
+- Membership relations
+- Database migration
+- Seed system
 
 Verification:
 
-- Prisma schema validation completed.
-- Migration applied successfully.
-- Database tables verified.
-- Seed execution verified.
-- Roles and permissions verified.
-- SUPER_ADMIN seed user verified.
+- Prisma validation passed
+- Migration verified
+- Seed verified
+- Database constraints verified
 
-## M1.2 Authentication Foundation
+### M1.2 Authentication Foundation ✅
 
-Status: Completed
-
-Implemented:
+Completed:
 
 - User registration
-- User login
+- Login
 - JWT authentication
 - Profile retrieval
 - Password hashing
 - Authentication middleware
-- Validation layer
 - Error handling
+- Validation layer
 
 Verification:
 
-- Registration flow verified
-- Duplicate email rejection verified
-- Login verified
-- Invalid credentials verified
-- JWT protected profile verified
+- Registration tested
+- Duplicate email tested
+- Login tested
+- Invalid password tested
+- Protected route tested
 
-## M1.3 Authorization RBAC Foundation
+### M1.3 Authorization RBAC Foundation ✅
 
-Status: Completed
+Completed:
 
-Implemented:
+- Platform permission resolution
+- Store permission resolution
+- RBAC middleware
+- Context separation
 
-- Platform permission resolution.
-- Store permission resolution.
-- RBAC middleware.
-- Context-based authorization.
-- Platform and store permission isolation.
+Rules implemented:
 
-Architecture Decisions:
-
-- Platform permissions and store permissions are separate contexts.
-- Users receive permissions through roles.
-- Store permissions require store membership.
-- Authorization logic is centralized in permission services.
+- Platform permissions cannot access store permissions
+- Store permissions cannot access platform permissions
+- Active user check required
+- Store context uses route storeId
 
 Verification:
 
-- Platform permission access verified.
-- Store permission access verified.
-- Unauthorized users rejected.
-- Context isolation verified.
-- Missing store context rejected.
+- Platform permission tests passed
+- Store permission tests passed
+- Context isolation tested
+
+### M1.4 Store Management Foundation ✅
+
+Completed:
+
+- Store request workflow
+- Platform approval workflow
+- Store rejection workflow
+- Public store directory
+- User store directory
+- Atomic store approval transaction
+
+Business Rules:
+
+- Store ownership is represented through UserStoreMembership
+- STORE_OWNER role assigned after approval
+- Store approval and operational status are separated
+- Operational status uses:
+  - OPEN
+  - CLOSED
+  - SUSPENDED
+
+Verification:
+
+- Request creation tested
+- Approval tested
+- Rejection tested
+- Duplicate slug protection tested
+- Membership creation tested
+- Public directory tested

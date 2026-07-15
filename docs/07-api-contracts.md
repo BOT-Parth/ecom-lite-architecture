@@ -1,6 +1,9 @@
-# Catalog and Inventory API Contracts
+# API Contracts — Catalog, Inventory & Store Management
 
-This document contains the backend API contracts for the Category, Product, and Inventory modules.
+This document contains the backend API contracts for the Category, Product, Inventory, and Store modules.
+
+> [!NOTE]
+> Authentication and Identity contracts (including the `GET /auth/profile` authorization context) are documented in [`architecture/api/module-01-identity-platform.md`](../api/module-01-identity-platform.md).
 
 ---
 

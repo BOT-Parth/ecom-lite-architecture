@@ -76,6 +76,8 @@ sequenceDiagram
 * **Never** resolve store context from request headers, query strings, or bodies – it is always the path parameter `storeId`.
 * Store permissions are **strictly additive**; a user may hold multiple store roles.
 * Platform permissions **cannot** be used to access store‑scoped resources.
+* **SUPER_ADMIN Store Access** – Platform administrators (`SUPER_ADMIN`) can browse every store. Once inside a store's admin context, the `SUPER_ADMIN` holds the same operational capabilities as a Store Admin (`STORE_OWNER`) for that store (including Category, Product, Inventory management and future store settings).
+* **Backend as Single Source of Truth** – The backend remains the sole authority for authentication and authorization. The frontend must never infer authorization by checking emails, usernames, or hardcoded IDs; all UI rendering decisions must depend on data explicitly returned in the backend profile/login authorization payload.
 * The `SUPER_ADMIN` platform role bypasses store permission checks for admin‑only endpoints (e.g., store approval).
 
 ---

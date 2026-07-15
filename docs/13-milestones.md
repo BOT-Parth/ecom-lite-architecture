@@ -131,3 +131,57 @@ Verification:
 - Migration applied successfully
 - Automated test suite passed (public retrieve, owner update, cross-store check, regular user block, negative quantity reject, DB cleanup)
 
+## Milestone 3 — Platform Store Directory ✅ (Current Milestone Complete)
+
+Completed:
+- Platform Store Directory API endpoint (`GET /stores/platform`)
+- Administrative authorization check via platform permission `APPROVE_STORE` (restricted to `SUPER_ADMIN` role)
+- Decoupled logic through thin routes, controllers, services, and repository layers
+- Data minimization query via explicit Prisma `select` in `listPlatformStores()`
+- Multi-suite integration testing verifying access controls, returned payloads, and data minimization constraints
+
+Verification:
+- Platform directory integration tests passed (`test-stores.js`)
+- Full live HTTP verification (authorized and unauthorized calls) passed (`verify-platform-directory.js`)
+
+## Milestone 4 — Store Registration Details ✅ (Current Milestone Complete)
+
+Completed:
+- Expanded `StoreRequest` and `Store` database models with optional description and avatarUrl columns.
+- Implemented optional description (max 500 characters) and avatarUrl (max 2048 characters) validators in Zod schema.
+- Enforced data minimization across repository queries using explicit Prisma selects.
+- Handled metadata mapping during store request approval, transferring description and avatarUrl correctly from request to store.
+
+Verification:
+- Store management integration tests passed (`test-stores.js`)
+- Full live HTTP verification (payload checks, invalid inputs, and directory lists) passed (`verify-store-registration-details.js`)
+
+## Milestone 5 — Store Settings & Metadata Management ✅ (Current Milestone Complete)
+
+Completed:
+- Added store settings endpoints (`GET /stores/:storeId/settings` and `PATCH /stores/:storeId/settings`).
+- Protected setting routes using store-scoped permission `MANAGE_STORE` (assigned to `STORE_OWNER`).
+- Implemented `SUPER_ADMIN` store access bypass to allow platform administrators to view/edit settings.
+- Added settings validation schema (`updateSettingsSchema` in `store.validator.js`).
+- Enforced data minimization via explicit select statements in service and repository queries.
+
+Verification:
+- Store settings integration verifications passed (`verify-store-settings.js`)
+- All existing test suites (rbac, auth, stores, inventory, catalog) run successfully.
+
+## Milestone 6 — Store Deletion & Recovery ⏳ (Future Milestone)
+
+Planned Scope:
+- Build Store Deletion request controls in frontend Store Settings.
+- Build backend Soft Delete endpoint (`DELETE /stores/:storeId` - flags `isDeleted: true` and sets `deletedAt`).
+- Implement soft-delete filters at the repository query level for public storefronts and tenant-facing listings.
+- Build Platform Admin recovery dashboard and recovery endpoint to clear the deletion flag.
+
+## Milestone 7 — Theme & Aesthetic Customisation ⏳ (Future Milestone)
+
+Planned Scope:
+- Implement client-side theme context supporting Dark Mode and Light Mode switching.
+- Save user theme preferences.
+- Polish layout and component styling using harmonious HSL color sets across both themes.
+
+

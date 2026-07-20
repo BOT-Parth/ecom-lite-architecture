@@ -296,3 +296,7 @@ Store registration metadata (name, slug, description, and avatar reference) is i
 Reason
 
 Keeps registration workflows separate from active store management, while preserving request history.
+
+
+---
+*Last verified against code on 2026-07-19: Verified architectural principles against current codebase.*

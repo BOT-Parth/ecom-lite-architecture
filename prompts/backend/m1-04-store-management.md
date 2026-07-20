@@ -24,8 +24,8 @@ The implementation must use the existing authentication and RBAC systems.
 
 Read:
 
-- architecture/docs/02-business-rules.md
-- architecture/docs/03-actors.md
+- architecture/docs/02-business-rules.md (Planned — not yet written)
+- architecture/docs/03-actors.md (Planned — not yet written)
 - architecture/docs/04-permission-model.md
 - architecture/docs/05-workflows.md
 - architecture/docs/06-database-design.md

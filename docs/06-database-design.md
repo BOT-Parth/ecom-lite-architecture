@@ -8,10 +8,13 @@ This document details the database schema layout, indexes, constraints, and rela
 
 ```mermaid
 erDiagram
-    STORES ||--o{ CATEGORIES : owns
-    STORES ||--o{ PRODUCTS : owns
-    CATEGORIES ||--o{ PRODUCTS : categorizes
-    PRODUCTS ||--o| INVENTORIES : stocks
+    STORES ||--o{ CATEGORIES : owns }
+    STORES ||--o{ PRODUCTS : owns }
+    STORES ||--o{ ORDERS : receives }
+    CATEGORIES ||--o{ PRODUCTS : categorizes }
+    PRODUCTS ||--o|{ INVENTORIES : stocks }
+    ORDERS ||--|{ ORDER_ITEMS : contains }
+    PRODUCTS ||--o{ ORDER_ITEMS : referenced_in }
 
     STORES {
         string id PK
@@ -41,6 +44,27 @@ erDiagram
         string product_id FK
         int quantity
     }
+
+    ORDERS {
+        string id PK
+        string order_number UK
+        string store_id FK
+        string customer_name
+        string customer_email
+        string customer_phone
+        string delivery_address
+        decimal total_amount
+        string status
+    }
+
+    ORDER_ITEMS {
+        string id PK
+        string order_id FK
+        string product_id FK
+        string product_name
+        int quantity
+        decimal unit_price
+    }
 ```
 
 ---
@@ -48,22 +72,26 @@ erDiagram
 ## Schema Tables
 
 ### 1. `categories` Table
+
 Stores product category structures scoped by tenant.
-* **Fields**:
+
+- **Fields**:
   - `id`: `TEXT` (UUID), Primary Key.
   - `name`: `TEXT`, Category display name.
   - `slug`: `TEXT`, URL slug.
   - `store_id`: `TEXT` (UUID), Foreign Key referencing `stores(id)`.
   - `created_at`: `TIMESTAMP`, Defaults to current time.
   - `updated_at`: `TIMESTAMP`, Automatically updates.
-* **Relationships**:
+- **Relationships**:
   - Scoped to one `Store` (On Store deletion, Category is cascade deleted).
-* **Constraints**:
+- **Constraints**:
   - `@@unique([store_id, slug])`: Slugs are unique per store context.
 
 ### 2. `products` Table
+
 Stores product listings.
-* **Fields**:
+
+- **Fields**:
   - `id`: `TEXT` (UUID), Primary Key.
   - `name`: `TEXT`, Product name.
   - `description`: `TEXT` (Nullable), Optional product description.
@@ -73,23 +101,68 @@ Stores product listings.
   - `store_id`: `TEXT` (UUID), Foreign Key referencing `stores(id)`.
   - `created_at`: `TIMESTAMP`, Defaults to current time.
   - `updated_at`: `TIMESTAMP`, Automatically updates.
-* **Relationships**:
+- **Relationships**:
   - Scoped to one `Store` (On Store deletion, Product is cascade deleted).
   - Optionally belongs to one `Category`.
-* **Constraints**:
+- **Constraints**:
   - `onDelete: SetNull` on `category_id`: Deleting a category sets `category_id` to `NULL` for associated products, ensuring product listings remain active.
 
 ### 3. `inventories` Table
+
 Tracks stock quantities for products.
-* **Fields**:
+
+- **Fields**:
   - `id`: `TEXT` (UUID), Primary Key.
   - `product_id`: `TEXT` (UUID), Foreign Key referencing `products(id)`, Unique.
   - `quantity`: `INTEGER`, Current stock level, Defaults to `0`.
   - `created_at`: `TIMESTAMP`, Defaults to current time.
   - `updated_at`: `TIMESTAMP`, Automatically updates.
-* **Relationships**:
+- **Relationships**:
   - Mapped one-to-one to a `Product`.
-* **Constraints**:
+- **Constraints**:
   - `onDelete: Cascade` on `product_id`: Deleting a product automatically deletes its inventory entry.
   - `quantity >= 0`: Enforced at runtime by the application logic and validator layers (must be a non-negative integer).
   - Scoped under the tenant's context via the product's associated `store_id` (cross-store queries are forbidden).
+
+
+### 4. `orders` Table
+
+Stores customer order records with embedded contact details.
+
+- **Fields**:
+  - `id`: `TEXT` (UUID), Primary Key.
+  - `order_number`: `TEXT`, Globally unique alphanumeric string.
+  - `store_id`: `TEXT` (UUID), Foreign Key referencing `stores(id)`.
+  - `customer_name`: `TEXT`, Name of the customer.
+  - `customer_email`: `TEXT`, Customer email.
+  - `customer_phone`: `TEXT`, Customer phone number.
+  - `delivery_address`: `TEXT`, Delivery address.
+  - `total_amount`: `DECIMAL(10, 2)`, Final computed total amount for the order.
+  - `status`: `ENUM`, Defaults to `PLACED`.
+  - `created_at`: `TIMESTAMP`, Defaults to current time.
+  - `updated_at`: `TIMESTAMP`, Automatically updates.
+- **Relationships**:
+  - Scoped to one `Store` (On Store deletion, Order is cascade deleted).
+  - Contains many `OrderItem`s (cascade deleted).
+
+### 5. `order_items` Table
+
+Stores historical snapshots of ordered products.
+
+- **Fields**:
+  - `id`: `TEXT` (UUID), Primary Key.
+  - `order_id`: `TEXT` (UUID), Foreign Key referencing `orders(id)`.
+  - `product_id`: `TEXT` (UUID, Nullable), Foreign Key referencing `products(id)`.
+  - `product_name`: `TEXT`, Historical snapshot of product name.
+  - `quantity`: `INTEGER`, Quantity ordered.
+  - `unit_price`: `DECIMAL(10, 2)`, Historical snapshot of unit price.
+  - `created_at`: `TIMESTAMP`, Defaults to current time.
+  - `updated_at`: `TIMESTAMP`, Automatically updates.
+- **Relationships**:
+  - Belongs to an `Order` (Cascade).
+  - References a `Product` (SetNull).
+- **Constraints**:
+  - `onDelete: SetNull` on `product_id`: Deleting a product sets `product_id` to `NULL` to preserve historical order records.
+
+---
+*Last verified against code on 2026-07-20: Verified architectural principles against current codebase.*

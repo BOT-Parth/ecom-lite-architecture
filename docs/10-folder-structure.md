@@ -246,3 +246,7 @@ When adding a new file ask:
 That answer determines its folder.
 
 Never place files based on convenience.
+
+
+---
+*Last verified against code on 2026-07-19: Verified architectural principles against current codebase.*

@@ -14,7 +14,7 @@ This milestone adds permission-based authorization using the approved RBAC archi
 
 Follow:
 
-- architecture/docs/03-actors.md
+- architecture/docs/03-actors.md (Planned — not yet written)
 - architecture/docs/04-permission-model.md
 - architecture/docs/06-database-design.md
 - architecture/prompts/backend/onboarding.md

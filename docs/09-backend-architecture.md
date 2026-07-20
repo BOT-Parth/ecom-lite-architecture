@@ -52,7 +52,7 @@ The application enforces a strictly decoupled, layered architecture:
 
 ### 6. Repositories ([src/repositories](file:///Users/bot/EC/ecom-lite-backend/src/repositories/))
 - **Responsibility**: Direct database persistence layer.
-- **Rules**: Contain all ORM queries (`prisma`). Keep repositories completely independent of business constraints. Provide clean async interfaces for services.
+- **Rules**: Contain all ORM queries (`prisma`). Keep repositories completely independent of business constraints. Provide clean async interfaces for services. Use the shared `withStoreScope` helper from `src/repositories/helpers.js` to enforce tenant isolation filters without duplicating `where: { storeId }` logic.
 
 ---
 
@@ -63,3 +63,21 @@ E-Com Lite is a multi-tenant platform where every store must remain completely i
 1. **Path-based Scoping**: All catalog and inventory routes are nested under `/stores/:storeId/...`. This forces all requests to specify which store they are acting upon.
 2. **Context Resolution**: The authorization middleware resolves `storeId` strictly from the route path parameter `req.params.storeId`. Supporting headers or request body contexts is forbidden to prevent context spoofing.
 3. **Cross-Store Prevention**: The service layer double-checks that any referenced entity (e.g., product category inside a product creation payload) belongs to the same target `storeId` before executing mutations.
+
+### Tenant Scoping Exceptions
+While most repository queries use the `withStoreScope` helper for tenant isolation, the following are known, approved exceptions:
+- `category.repository.js` `findBySlug(storeId, slug)`: Cannot use the helper because Prisma's `findUnique` strict mode restricts the `where` clause exactly to the compound unique constraint (`storeId_slug`), and throws an error if a flat `storeId` is appended.
+- `inventory.repository.js`: Inventory is strictly scoped via `productId` rather than `storeId` directly, so the flat `storeId` helper does not apply mechanically.
+
+---
+
+## Configuration & Environment
+
+Environment variables must be centralized, validated using Zod, and exported from `src/config/env.js`. Direct `process.env` reads throughout the application are prohibited.
+
+### Approved Exceptions
+- `prisma.config.ts`: Reads `process.env.DATABASE_URL` directly. This is an intentional exception because it is executed by the Prisma CLI entirely outside the standard application module lifecycle. See `adr/0001-prisma-config-env-exception.md`.
+
+
+---
+*Last verified against code on 2026-07-19: Verified architectural principles against current codebase.*

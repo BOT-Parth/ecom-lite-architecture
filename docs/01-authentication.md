@@ -143,7 +143,7 @@ To maximize efficiency and security:
 * **Unified Login Flow** – Only one login system/page exists. Both platform administrators (`SUPER_ADMIN`) and store tenants authenticate through this single shared flow. There is no separate admin login page.
 * Email uniqueness enforced at the Prisma level (`@@unique([email])`).
 * Passwords are never stored in plain text — hashed with `bcrypt` using a cost factor of 10.
-* JWTs are signed with `process.env.JWT_SECRET` and expire after `process.env.JWT_EXPIRES_IN`.
+* JWTs are signed with `env.JWT_SECRET` and expire after `env.JWT_EXPIRES_IN` (loaded centrally via `src/config/env.js`).
 * The JWT payload contains only `{ userId }`. Authorization data is never embedded in the token.
 * The authentication middleware extracts `userId` from the token and attaches `req.user = { userId }` for downstream middleware and controllers.
 
@@ -193,3 +193,7 @@ sequenceDiagram
 ---
 
 **Verification**: All endpoints are functional, documented, and covered by automated tests.
+
+
+---
+*Last verified against code on 2026-07-19: Verified architectural principles against current codebase.*

@@ -83,7 +83,36 @@ This document serves as the source of truth for the frontend team regarding the 
    RBAC: Modifying products or inventory requires the MANAGE_PRODUCTS store permission.
    Business Rules: Creating a product automatically creates a 1:1 linked inventory record with quantity: 0. Deleting a product cascades to delete its inventory record.
    Future Placeholders visible in code: imageUrls is just a string array; there is no backend multipart file upload handler yet.
-7. Health
+7. Orders
+   Current REST Endpoints:
+   POST /stores/:storeId/orders
+   POST /stores/:storeId/orders/track
+   GET /stores/:storeId/orders
+   GET /stores/:storeId/orders/:id
+   PATCH /stores/:storeId/orders/:id/status
+   Request Body:
+   POST /orders: { customerName (string 3-100), customerEmail (email), customerPhone (string min 10), deliveryAddress (string 1-500), items (array of { productId: uuid, quantity: positive integer }, min length 1) }
+   POST /track: { email (email), phone (string min 10) }
+   PATCH /status: { status (enum: PLACED, PROCESSING, READY, COMPLETED, CANCELLED) }
+   Response Body:
+   POST /orders: { success, message, data: { order: { id, orderNumber, storeId, customerName, customerEmail, customerPhone, deliveryAddress, totalAmount, status, createdAt, updatedAt, items: [{ id, productId, productName, quantity, unitPrice }] } } }
+   POST /track: { success, data: { orders: [{ id, orderNumber, storeId, totalAmount, status, createdAt, updatedAt, maskedDeliveryAddress, items }] } } (Note: ordered newest first).
+   GET /orders: { success, data: { orders: [...] } }
+   GET /:id: { success, data: { order: {...} } }
+   PATCH /status: { success, message, data: { order: {...} } }
+   Validation Rules: Customer details validated. Items array min 1. Product availability checked.
+   RBAC: 
+   POST /orders, POST /track are Public.
+   GET /orders, GET /:id, PATCH /status require MANAGE_ORDERS store permission for the specified storeId.
+   Business Rules: 
+   - Guest Checkout: No customer accounts required.
+   - Simulated Payment: Total amount is calculated backend-side from snapshotted prices.
+   - Inventory: Atomic transaction for validation, creation, and stock deduction. Whole order rejected if any item has insufficient stock.
+   - Restoration: Cancelling an order restores inventory automatically.
+   - Merging: Duplicate products in the request are safely merged.
+   - Status Lifecycle: Forward flow (PLACED -> PROCESSING -> READY -> COMPLETED). Terminal states (COMPLETED, CANCELLED).
+   - Tracking: Response masks street address and strips PII. Tenant isolated.
+8. Health
    Current REST Endpoints: GET /health
    Response Body: { "status": "ok", "message": "up and running" }
    RBAC: Public. Used for EC2 ALB target group health checks.
@@ -93,13 +122,17 @@ This document serves as the source of truth for the frontend team regarding the 
 Store Requests (creation and admin approval)
 Store Settings modifications
 Categories & Products CRUD
-Inventory patching 2. Backend features partially consumed:
+Inventory patching
+Orders (checkout and management)
 
-Authentication (login/register likely consumed, but JWT handling for tenant scoped requests /stores/:storeId/\* requires frontend implementation). 3. Backend features intentionally deferred:
+2. Backend features partially consumed:
+Authentication (login/register likely consumed, but JWT handling for tenant scoped requests /stores/:storeId/* requires frontend implementation). 
 
-Orders & Checkout: Cart, checkout workflows, and order histories do not exist.
+3. Backend features intentionally deferred:
+Customer Accounts, Cart Persistence, Payment Gateway, Shipping, Reviews, Wishlist, and Order Histories are intentionally deferred.
 Media Uploads: avatarUrl and imageUrls expect fully qualified URLs, not binary file uploads. CDN integration is deferred.
-User Roles via UI: Currently, SUPER_ADMIN is only created via prisma/seed.js and there is no UI route to promote a standard user to super admin. 4. Backend breaking changes since the previous frontend implementation:
+User Roles via UI: Currently, SUPER_ADMIN is only created via prisma/seed.js and there is no UI route to promote a standard user to super admin. 
 
+4. Backend breaking changes since the previous frontend implementation:
 Environment Variables: The backend now strictly validates DATABASE_URL, JWT_SECRET, and DB_SSL at startup via src/config/env.js.
 The /health endpoint logic was refactored into a HealthController, though the signature remains unchanged.

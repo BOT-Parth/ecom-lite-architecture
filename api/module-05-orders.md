@@ -1,24 +1,25 @@
-# Module 05: Customer Orders APIs
+# Module 05: Orders
 
-This document defines the API contracts for the Customer Orders module. These APIs handle order placement, guest tracking, and store staff order management.
+This module handles order placement (checkout) and order management for store owners/staff.
+It integrates deeply with Customer Accounts to link orders and snaps customer PII at checkout.
 
 ## Authentication & Authorization
-- **Public endpoints** (`POST /stores/:storeId/orders`, `POST /stores/:storeId/orders/track`) require no authentication.
+- **Public endpoints** (`POST /stores/:storeId/orders/track`) require no authentication.
 - **Protected endpoints** require a valid JWT Bearer token and the `MANAGE_ORDERS` store permission for the specified `storeId`.
+- **Checkout** requires an Authenticated Customer (`CUSTOMER_JWT`).
 
 ---
 
-## 1. Place Order (Public)
+## 1. Place Order (Authenticated)
 Place a new customer order.
 
 **Endpoint:** `POST /stores/:storeId/orders`
+**Access**: Authenticated Customer (`CUSTOMER_JWT`)
+**Purpose**: Submits a new order, verifies customer identity via token, and atomically deducts inventory.
 
 **Request Body:**
 ```json
 {
-  "customerName": "string (3-100 chars)",
-  "customerEmail": "string (valid email)",
-  "customerPhone": "string (min 10 chars)",
   "deliveryAddress": "string (1-500 chars)",
   "items": [
     {
@@ -28,7 +29,7 @@ Place a new customer order.
   ]
 }
 ```
-*Note: Duplicate `productId`s are automatically merged. If any product has insufficient inventory or does not exist, the entire request is rejected.*
+*Note: `customerName`, `customerEmail`, and `customerPhone` are read directly from the `req.customer` profile and snapshotted. Duplicate `productId`s are automatically merged. If any product has insufficient inventory or does not exist, the entire request is rejected.*
 
 **Response (201 Created):**
 ```json

@@ -1,7 +1,7 @@
 Backend Capability Report
 This document serves as the source of truth for the frontend team regarding the current state of the backend capabilities.
 
-1. Authentication
+1. Platform Authentication
    Current REST Endpoints:
    POST /auth/register
    POST /auth/login
@@ -14,7 +14,7 @@ This document serves as the source of truth for the frontend team regarding the 
    profile: { success, message, data: { user: { id, email, username, memberships, platformRoles } } }
    Validation Rules: Valid email format. Passwords hashed with bcrypt.
    RBAC: GET /auth/profile requires a valid JWT token.
-   Business Rules: Emails must be unique. The backend issues a single JWT token for all roles.
+   Business Rules: Emails must be unique. The backend issues a single JWT token for all platform roles. Platform JWTs cannot be used for customer authentication.
    Unsupported fields: None.
    MVP Limitations: Password reset flows and email verification are not implemented.
 2. Store Requests (Platform Administration)
@@ -48,16 +48,30 @@ This document serves as the source of truth for the frontend team regarding the 
    GET /platform requires APPROVE_STORE platform permission.
    Settings endpoints require the MANAGE_STORE store permission for that specific storeId.
    Unsupported fields: Updating the slug after creation is not supported.
-4. Public Storefront
+4. Public Storefront & Customer Accounts
    Current REST Endpoints:
    GET /stores (List public stores)
    GET /stores/:storeId/categories
    GET /stores/:storeId/products
    GET /stores/:storeId/products/:id
-   Request Body: None.
-   Validation Rules: None.
-   RBAC: Fully public. No JWT required.
-   Business Rules: GET /stores only returns stores where approvalStatus is APPROVED and operationalStatus is OPEN.
+   POST /stores/:storeId/customers/register
+   POST /stores/:storeId/customers/login
+   POST /stores/:storeId/customers/logout
+   GET /stores/:storeId/customers/me
+   GET /stores/:storeId/customers/me/orders
+   GET /stores/:storeId/customers/me/orders/:id
+   Request Body:
+   register: { firstName, lastName, email, phone, password }
+   login: { email, password }
+   Validation Rules: 
+   Customers: email must be unique per storeId. 
+   RBAC: 
+   GET /stores, GET /categories, GET /products are fully public. 
+   Customer register/login are public.
+   Customer /me and /orders require a valid Customer JWT for the specific storeId.
+   Business Rules: 
+   GET /stores only returns stores where approvalStatus is APPROVED and operationalStatus is OPEN.
+   Customers are strictly scoped to a single store. Customer JWTs are completely distinct from Platform JWTs.
 5. Categories (Catalog)
    Current REST Endpoints:
    POST /stores/:storeId/categories
@@ -86,32 +100,30 @@ This document serves as the source of truth for the frontend team regarding the 
 7. Orders
    Current REST Endpoints:
    POST /stores/:storeId/orders
-   POST /stores/:storeId/orders/track
    GET /stores/:storeId/orders
    GET /stores/:storeId/orders/:id
    PATCH /stores/:storeId/orders/:id/status
    Request Body:
-   POST /orders: { customerName (string 3-100), customerEmail (email), customerPhone (string min 10), deliveryAddress (string 1-500), items (array of { productId: uuid, quantity: positive integer }, min length 1) }
-   POST /track: { email (email), phone (string min 10) }
+   POST /orders: { deliveryAddress (string 1-500), items (array of { productId: uuid, quantity: positive integer }, min length 1) }
    PATCH /status: { status (enum: PLACED, PROCESSING, READY, COMPLETED, CANCELLED) }
    Response Body:
-   POST /orders: { success, message, data: { order: { id, orderNumber, storeId, customerName, customerEmail, customerPhone, deliveryAddress, totalAmount, status, createdAt, updatedAt, items: [{ id, productId, productName, quantity, unitPrice }] } } }
-   POST /track: { success, data: { orders: [{ id, orderNumber, storeId, totalAmount, status, createdAt, updatedAt, maskedDeliveryAddress, items }] } } (Note: ordered newest first).
+   POST /orders: { success, message, data: { order: { id, orderNumber, storeId, customerId, customerName, customerEmail, customerPhone, deliveryAddress, totalAmount, status, createdAt, updatedAt, items: [{ id, productId, productName, quantity, unitPrice }] } } }
    GET /orders: { success, data: { orders: [...] } }
    GET /:id: { success, data: { order: {...} } }
    PATCH /status: { success, message, data: { order: {...} } }
-   Validation Rules: Customer details validated. Items array min 1. Product availability checked.
+   Validation Rules: Items array min 1. Product availability checked. Customer identity automatically verified via token.
    RBAC: 
-   POST /orders, POST /track are Public.
-   GET /orders, GET /:id, PATCH /status require MANAGE_ORDERS store permission for the specified storeId.
+   POST /orders requires a valid Customer JWT.
+   GET /orders, GET /:id, PATCH /status require MANAGE_ORDERS store permission for the specified storeId (Platform User).
    Business Rules: 
-   - Guest Checkout: No customer accounts required.
+   - Authenticated Checkout: Customer login is required to place orders.
+   - PII Snapshots: Customer data is captured from their profile at order creation.
    - Simulated Payment: Total amount is calculated backend-side from snapshotted prices.
    - Inventory: Atomic transaction for validation, creation, and stock deduction. Whole order rejected if any item has insufficient stock.
    - Restoration: Cancelling an order restores inventory automatically.
    - Merging: Duplicate products in the request are safely merged.
    - Status Lifecycle: Forward flow (PLACED -> PROCESSING -> READY -> COMPLETED). Terminal states (COMPLETED, CANCELLED).
-   - Tracking: Response masks street address and strips PII. Tenant isolated.
+   - Historical Orders: Legacy guest orders without customerIds remain untouched.
 8. Health
    Current REST Endpoints: GET /health
    Response Body: { "status": "ok", "message": "up and running" }
@@ -129,7 +141,7 @@ Orders (checkout and management)
 Authentication (login/register likely consumed, but JWT handling for tenant scoped requests /stores/:storeId/* requires frontend implementation). 
 
 3. Backend features intentionally deferred:
-Customer Accounts, Cart Persistence, Payment Gateway, Shipping, Reviews, Wishlist, and Order Histories are intentionally deferred.
+Cart Persistence, Payment Gateway, Shipping, Reviews, Wishlist are intentionally deferred.
 Media Uploads: avatarUrl and imageUrls expect fully qualified URLs, not binary file uploads. CDN integration is deferred.
 User Roles via UI: Currently, SUPER_ADMIN is only created via prisma/seed.js and there is no UI route to promote a standard user to super admin. 
 

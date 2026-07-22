@@ -11,8 +11,10 @@ erDiagram
     STORES ||--o{ CATEGORIES : owns }
     STORES ||--o{ PRODUCTS : owns }
     STORES ||--o{ ORDERS : receives }
+    STORES ||--o{ CUSTOMERS : registers }
     CATEGORIES ||--o{ PRODUCTS : categorizes }
     PRODUCTS ||--o|{ INVENTORIES : stocks }
+    CUSTOMERS ||--o{ ORDERS : places }
     ORDERS ||--|{ ORDER_ITEMS : contains }
     PRODUCTS ||--o{ ORDER_ITEMS : referenced_in }
 
@@ -45,10 +47,22 @@ erDiagram
         int quantity
     }
 
+    CUSTOMERS {
+        string id PK
+        string store_id FK
+        string first_name
+        string last_name
+        string email
+        string phone
+        string password
+        boolean is_active
+    }
+
     ORDERS {
         string id PK
         string order_number UK
         string store_id FK
+        string customer_id FK
         string customer_name
         string customer_email
         string customer_phone
@@ -125,7 +139,27 @@ Tracks stock quantities for products.
   - Scoped under the tenant's context via the product's associated `store_id` (cross-store queries are forbidden).
 
 
-### 4. `orders` Table
+### 4. `customers` Table
+
+Stores authenticated customer identities scoped to a specific store.
+
+- **Fields**:
+  - `id`: `TEXT` (UUID), Primary Key.
+  - `store_id`: `TEXT` (UUID), Foreign Key referencing `stores(id)`.
+  - `first_name`: `TEXT`, Customer's first name.
+  - `last_name`: `TEXT`, Customer's last name.
+  - `email`: `TEXT`, Customer email.
+  - `phone`: `TEXT`, Customer phone number.
+  - `password`: `TEXT`, Bcrypt hashed password.
+  - `is_active`: `BOOLEAN`, Defaults to `true`.
+  - `created_at`: `TIMESTAMP`, Defaults to current time.
+  - `updated_at`: `TIMESTAMP`, Automatically updates.
+- **Relationships**:
+  - Scoped to one `Store` (Cascade deleted).
+- **Constraints**:
+  - `@@unique([store_id, email])`: Emails are unique per store context.
+
+### 5. `orders` Table
 
 Stores customer order records with embedded contact details.
 
@@ -133,9 +167,10 @@ Stores customer order records with embedded contact details.
   - `id`: `TEXT` (UUID), Primary Key.
   - `order_number`: `TEXT`, Globally unique alphanumeric string.
   - `store_id`: `TEXT` (UUID), Foreign Key referencing `stores(id)`.
-  - `customer_name`: `TEXT`, Name of the customer.
-  - `customer_email`: `TEXT`, Customer email.
-  - `customer_phone`: `TEXT`, Customer phone number.
+  - `customer_id`: `TEXT` (UUID, Nullable), Foreign Key referencing `customers(id)`.
+  - `customer_name`: `TEXT`, Snapshot of customer name.
+  - `customer_email`: `TEXT`, Snapshot of customer email.
+  - `customer_phone`: `TEXT`, Snapshot of customer phone.
   - `delivery_address`: `TEXT`, Delivery address.
   - `total_amount`: `DECIMAL(10, 2)`, Final computed total amount for the order.
   - `status`: `ENUM`, Defaults to `PLACED`.
@@ -143,9 +178,10 @@ Stores customer order records with embedded contact details.
   - `updated_at`: `TIMESTAMP`, Automatically updates.
 - **Relationships**:
   - Scoped to one `Store` (On Store deletion, Order is cascade deleted).
+  - Belongs to a `Customer` (On Customer deletion, set null).
   - Contains many `OrderItem`s (cascade deleted).
 
-### 5. `order_items` Table
+### 6. `order_items` Table
 
 Stores historical snapshots of ordered products.
 
@@ -165,4 +201,4 @@ Stores historical snapshots of ordered products.
   - `onDelete: SetNull` on `product_id`: Deleting a product sets `product_id` to `NULL` to preserve historical order records.
 
 ---
-*Last verified against code on 2026-07-20: Verified architectural principles against current codebase.*
+*Last verified against code on 2026-07-22: Verified architectural principles against current codebase.*

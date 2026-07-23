@@ -4,9 +4,9 @@ This module handles order placement (checkout) and order management for store ow
 It integrates deeply with Customer Accounts to link orders and snaps customer PII at checkout.
 
 ## Authentication & Authorization
-- **Public endpoints** (`POST /stores/:storeId/orders/track`) require no authentication.
-- **Protected endpoints** require a valid JWT Bearer token and the `MANAGE_ORDERS` store permission for the specified `storeId`.
-- **Checkout** requires an Authenticated Customer (`CUSTOMER_JWT`).
+- **Customer endpoints** (`GET /stores/:storeId/customers/orders`, `POST /stores/:storeId/orders`) require an Authenticated Customer (`CUSTOMER_JWT`).
+- **Protected store endpoints** (`GET /stores/:storeId/orders`) require a valid Platform JWT Bearer token and the `MANAGE_ORDERS` store permission for the specified `storeId`.
+- **Guest endpoints** (`POST /stores/:storeId/orders/track`) are **DEPRECATED** and removed.
 
 ---
 
@@ -65,18 +65,11 @@ Place a new customer order.
 
 ---
 
-## 2. Track Orders (Public)
-Track existing guest orders for a specific store. Orders are returned newest first.
+## 2. Customer Order History (Authenticated)
+List all orders placed by the authenticated customer.
 
-**Endpoint:** `POST /stores/:storeId/orders/track`
-
-**Request Body:**
-```json
-{
-  "email": "string",
-  "phone": "string"
-}
-```
+**Endpoint:** `GET /stores/:storeId/customers/orders`
+**Access**: Authenticated Customer (`CUSTOMER_JWT`)
 
 **Response (200 OK):**
 ```json
@@ -92,14 +85,38 @@ Track existing guest orders for a specific store. Orders are returned newest fir
         "status": "string",
         "createdAt": "timestamp",
         "updatedAt": "timestamp",
-        "maskedDeliveryAddress": "string (e.g., 'Tech City, CA' or '***')",
         "items": [ ... ]
       }
     ]
   }
 }
 ```
-*Note: The response intentionally omits `customerEmail`, `customerPhone`, and `customerName`, and masks the `deliveryAddress` to protect PII.*
+
+---
+
+## 2.1 Customer Order Details (Authenticated)
+Get full details of a specific order placed by the authenticated customer.
+
+**Endpoint:** `GET /stores/:storeId/customers/orders/:id`
+**Access**: Authenticated Customer (`CUSTOMER_JWT`)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "order": { ... }
+  }
+}
+```
+
+---
+
+## [DEPRECATED] Track Orders (Guest)
+*Note: Guest checkout and guest tracking have been completely removed from the system. This section is preserved for historical context only.*
+
+**Endpoint:** `POST /stores/:storeId/orders/track`
+**Status:** ❌ Removed
 
 ---
 
@@ -177,4 +194,4 @@ Update the status of an existing order.
 ```
 
 ---
-*Last verified against code on 2026-07-20: Verified endpoints, Zod schemas, and masking logic in `order.routes.js`, `order.controller.js` and `order.validator.js`.*
+*Last verified against code on 2026-07-23: Verified endpoints and schemas reflect Customer Authentication models. Guest ordering endpoints are removed.*

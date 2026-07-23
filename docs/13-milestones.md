@@ -118,9 +118,9 @@ Status: **Implemented & Clean**
 Completed:
 - Order and OrderItem models, tracking relationships, and cascading deletes (Store→Order Cascade, Product→OrderItem SetNull).
 - `MANAGE_ORDERS` store permission.
-- Public order placement (atomic inventory deduction, item merging).
-- Public order tracking (PII stripping, address masking).
+- Customer order placement (atomic inventory deduction, item merging). *(Replaces deprecated Public order placement)*
+- Customer order tracking via Order History. *(Replaces deprecated Public order tracking)*
 - Protected order management APIs (status transitions, atomic inventory restoration on cancel).
 
 Verification:
-- Last verified against code on 2026-07-20: Verified tracking endpoint sort order (Newest -> Oldest), address masking (city/region heuristic), and inventory flow.
+- Last verified against code on 2026-07-23: Verified tracking and placement endpoints reflect the Customer Accounts shift. Guest tracking and checkout flows are completely deprecated.

@@ -78,6 +78,13 @@ Environment variables must be centralized, validated using Zod, and exported fro
 ### Approved Exceptions
 - `prisma.config.ts`: Reads `process.env.DATABASE_URL` directly. This is an intentional exception because it is executed by the Prisma CLI entirely outside the standard application module lifecycle. See `adr/0001-prisma-config-env-exception.md`.
 
+---
+
+## Server Startup & Infrastructure
+
+The application explicitly constructs a Node.js `http.Server` rather than relying on `app.listen()` from Express.
+- **Why**: Express v5 intercepts bind errors (e.g., `EADDRINUSE`) and passes them into the `listen()` callback instead of emitting a standard error event on `app.listen()`'s return value. Relying on that undocumented callback-argument behavior previously caused a real incident (silent clean exit on port conflict, no error logged).
+- **Implementation**: The server uses `http.createServer(app)` + `server.on('error', ...)` to guarantee that binding failures actively crash the process with a non-zero exit code and clear logging. This is documented so it isn't mistaken for architecture drift.
 
 ---
-*Last verified against code on 2026-07-19: Verified architectural principles against current codebase.*
+*Last verified against code on 2026-07-22: Verified architectural principles and server startup fix against current codebase.*

@@ -5,11 +5,15 @@ Created on: July 16, 2026
 ## 1. Directory Structure & Responsibilities
 
 - **`src/context/`**: Houses global context providers for core application state.
-  - `AuthContext.jsx`: Encapsulates user session, token validation, login/logout mechanisms, and authorization metadata.
+  - `AuthContext.jsx`: Encapsulates Platform User session, token validation, login/logout, and RBAC.
+  - `CustomerAuthContext.jsx`: Encapsulates Storefront Customer session, token validation, login/logout scoped to a specific store.
+  - `CartContext.jsx`: Manages volatile cart state, strictly scoped via React `key` to the active store.
+  - `StoreContext.jsx`: Handles public store slug resolution and exposes the active `store` and `storeId` to children.
   - `ToastContext.jsx`: Provides transient overlay alert queues.
-- **`src/hooks/`**: Exposes syntactic hooks (`useAuth.js`, `useToast.js`) to consume global contexts safely.
+- **`src/hooks/`**: Exposes syntactic hooks (`useAuth`, `useCustomerAuth`, `useStore`, `useCart`, `useToast`) to consume global contexts safely.
 - **`src/services/`**: Configures third-party API clients and domain-level resolvers.
-  - `api.js`: Axios instance configured with automatic JWT attachment and standardized response un-wrapping.
+  - `api.js`: Axios instance configured with automatic JWT attachment for Platform Users.
+  - `customerApi.js`: Axios instance configured with automatic `CUSTOMER_JWT` attachment for Storefront Customers.
   - `storeResolver.js`: Tiered store slug resolution searching personal lists, admin platform directories, and public endpoints.
 - **`src/pages/`**: Top-level page views mapped to path routes in the Router.
   - `PublicMarketplace.jsx`: Public landing page and marketplace directory.
@@ -32,50 +36,43 @@ Created on: July 16, 2026
 
 ## 3. Authentication & Authorization Flows
 
-### Authentication (Authentication lifecycle)
+### Platform Authentication (Admin/Merchant)
 1. **Bootstrap**: On startup, `AuthContext` reads the JWT token from `localStorage`.
    - If present, it executes `GET /auth/profile`. The response automatically contains the full user profile including authorization metadata.
    - If missing, or if the profile call returns `401 Unauthorized`, the session is cleared and the user is logged out.
-2. **Login/Register**: Forms submit credentials to `POST /auth/login` or `POST /auth/register`. On success, tokens are saved to `localStorage`, and the user object is set in `AuthContext` memory. Includes client-side **Password visibility toggles** for improved UX.
+2. **Login/Register**: Forms submit credentials to `POST /auth/login` or `POST /auth/register`. On success, tokens are saved to `localStorage`, and the user object is set in `AuthContext` memory.
+3. **Role Protection**: The `ProtectedRoute` component intercepts access attempts. Redirects unauthenticated users to `/login`. Enforces `allowedRoles` (e.g., `SUPER_ADMIN`).
 
-### Authorization (Platform Roles & Membership Permissions)
-- **Roles**: Mapped directly from the backend payload (`user.authorization.platformRole` and `user.authorization.storeMemberships`).
-- **Route Protection**: The `ProtectedRoute` component intercepts access attempts:
-  - If unauthenticated, it redirects to `/login` preserving the target path in navigation state.
-  - If a route defines `allowedRoles` (e.g. `["SUPER_ADMIN"]`), and the user does not possess that platform role, they are redirected to `/profile`.
+### Customer Authentication (Storefront)
+1. **Bootstrap**: `CustomerAuthContext` only attempts hydration (`GET /stores/:storeId/customers/me` via `customerApi`) *after* the `StoreContext` successfully resolves a valid `storeId`.
+2. **Login/Register**: Customers authenticate against a specific storefront (`POST /stores/:storeId/customers/login`).
+3. **Token Scoping**: `customer_token` is completely isolated from the Platform `token`. A customer token for Store A mathematically cannot authenticate against Store B.
+4. **Route Protection**: The `CustomerProtectedRoute` component intercepts customer routes (like checkout or order history). Unauthenticated attempts redirect to `/stores/:storeSlug/login`.
 
 ---
 
 ## 4. Routing & Landing Flows
 
-```mermaid
-graph TD
-  Start[Navigating /] --> AuthCheck{Logged In?}
-  AuthCheck -- No --> Login[/login]
-  AuthCheck -- Yes --> RoleCheck{Platform Role?}
-  RoleCheck -- SUPER_ADMIN --> Admin[/admin/requests]
-  RoleCheck -- STORE_ADMIN --> StoreCheck{Has Store Slug?}
-  StoreCheck -- Yes --> Dash[/stores/:slug/dashboard]
-  StoreCheck -- No --> Prof[/profile]
-```
+### Platform Routing
+- **Unauthenticated**: Routed to `/login` if trying to access restricted folders.
+- **STORE_ADMIN**: Lands on `/stores/:storeSlug/dashboard` if a store is registered. Falls back to `/profile` if none exists.
+- **SUPER_ADMIN**: Lands directly on the approvals panel `/admin/requests`.
 
-- **Anonymous**: Routed to `/login` if trying to access restricted folders. Can view public storefronts (`/stores/:storeSlug`) and the `PublicMarketplace.jsx`.
-- **STORE_ADMIN**:
-  - Lands on `/stores/:storeSlug/dashboard` if a store is registered to their membership metadata.
-  - Falls back to `/profile` if they do not yet own a store (allowing them to submit a creation request application).
-- **SUPER_ADMIN**:
-  - Lands directly on the approvals panel `/admin/requests` (`SuperAdminRequests.jsx`).
-- **StoreResolver Behaviour**: Resolves store slugs tiered by user context (personal lists vs. platform directory vs. public fetch). Navigates correctly for closed or pending stores if authorized.
+### Storefront Routing
+- **Hierarchy**: All storefront routes are wrapped in `<PublicStoreLayout>` which provides `<StoreProvider>`, `<CustomerAuthProvider>`, and `<CartProvider>`.
+- **`<StorefrontGuard>`**: Intercepts failed store resolution (invalid slugs) to globally render a "Store Not Found" view, safely preventing nested routes from mounting.
+- **Customer Pages**: `/stores/:storeSlug` (Catalog), `/login`, `/register`, `/checkout`, `/orders`. Checkout and Orders are protected via `<CustomerProtectedRoute>`.
 
 ---
 
 ## 5. Navigation & Navbar Behaviour
 
-- Dynamic rendering depending on `user.authorization` context:
-  - **Anonymous**: Shows Login, Register
-  - **STORE_ADMIN**: Shows Profile, Store Dashboard (only if `primaryStore` exists)
-  - **SUPER_ADMIN**: Shows Browse Stores, Store Requests
-- Implemented user session info dropdown display with distinct "Super Admin" vs "Merchant" labels.
+- **Navbar**: Stripped of all links except branding, user info, and logout. It is now strictly a presentational top bar.
+- **Platform Sidebar**: Primary navigation for platform administration. Dynamic rendering depending on `user.authorization` context:
+  - **STORE_ADMIN**: Shows generic Dashboard, Profile, Settings.
+  - **SUPER_ADMIN**: Also shows Admin section (Browse Stores, Store Requests, Platform Analytics).
+- **Store Sidebar**: Primary navigation for store management contexts (Products, Categories, Orders, Inventory, Settings).
+- **Customer Sidebar**: Primary navigation for the storefront, rendering categories and enabling URL-based filtering.
 
 ---
 
@@ -86,6 +83,10 @@ graph TD
    - Multi-store selection headers and switching controls have been completely removed from the UI.
 2. **Access Control**:
    - Platform administration options (approvals queue, browse platform stores list) are only rendered and permitted for `SUPER_ADMIN` platformRole.
+3. **Dual Identity Segregation**:
+   - Platform Users and Customers are mathematically walled off. `customerApi.js` owns the customer token, `api.js` owns the platform token.
+4. **Checkout Security**:
+   - Guest Checkout is officially deprecated and removed from project architecture. Customers must authenticate. PII (Name, Email, Phone) is stripped from the payload and securely hydrated natively by the backend via JWT decoding.
 
 ---
 

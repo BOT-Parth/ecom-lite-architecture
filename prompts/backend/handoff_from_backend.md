@@ -165,15 +165,15 @@ module-05-orders.md
 Verification Status: No differences exist. The implementation and documentation are perfectly synchronized.
 
 15. Frontend Implementation Notes
-    To align with this milestone, the frontend must now:
+    This milestone is now COMPLETE. The frontend successfully integrated the backend by:
 
-Remove the guest checkout form and tracking page.
-Implement a Customer Registration and Login view specifically scoped to the active storefront.
-Require login before the checkout button can be clicked.
-Store the Customer JWT and attach it to API calls targeting /me, /me/orders, and /orders.
-Fetch the customer profile via /customers/me to hydrate the UI.
-Render an Order History page using /customers/me/orders.
-Remove customerName, customerEmail, and customerPhone fields from the checkout submission payload. 16. Known Constraints
+- Removing the guest checkout form and tracking page.
+- Implementing a Customer Registration and Login view specifically scoped to the active storefront.
+- Requiring login before the checkout button can be clicked.
+- Storing the Customer JWT and attaching it to API calls targeting `/me`, `/me/orders`, and `/orders`.
+- Fetching the customer profile via `/customers/me` to hydrate the UI.
+- Rendering an Order History page using `/customers/me/orders`.
+- Removing `customerName`, `customerEmail`, and `customerPhone` fields from the checkout submission payload. 16. Known Constraints
 The following features were intentionally excluded from this MVP milestone and are not implemented:
 
 Saved delivery addresses (Delivery address must be typed every time).

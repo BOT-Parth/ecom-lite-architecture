@@ -1,6 +1,6 @@
 # Frontend Integration Reference
 
-This document serves as the absolute source of truth for the E-Com Lite backend API. It strictly documents only the currently implemented backend capabilities. 
+This document serves as the absolute source of truth for the E-Com Lite backend API. It strictly documents only the currently implemented backend capabilities.
 
 ## 1. Overview
 
@@ -16,24 +16,25 @@ E-Com Lite is divided into two distinct API domains with separate identity bound
 
 The backend issues two distinct JWTs:
 
-- **Platform JWT**: 
+- **Platform JWT**:
   - Acquired via `POST /auth/login`.
   - Sent via `Authorization: Bearer <token>`.
   - Valid for `GET /auth/profile`, `/store-requests`, and merchant actions (e.g., `/stores/:storeId/products`).
-- **Customer JWT**: 
+- **Customer JWT**:
   - Acquired via `POST /stores/:storeId/customers/login`.
   - Sent via `Authorization: Bearer <token>`.
   - Signed with `CUSTOMER_JWT_SECRET`. Contains `{ type: "customer", storeId, customerId }`.
   - Required for checkout and customer order history.
 
 **Token Ownership & Logout:**
+
 - The frontend must never mix tokens.
 - **Logout Expectations**: When a token expires (401), the frontend must globally clear the respective session (Platform or Customer). There are no refresh tokens.
 
 ## 3. Store Resolution
 
 - **Slug Resolution**: The public storefront resolves a human-readable slug to a UUID via `GET /stores/public/:slug`.
-- **storeId Usage**: The resolved UUID (`storeId`) must be injected into all subsequent Storefront API calls (e.g., `/stores/:storeId/products`). 
+- **storeId Usage**: The resolved UUID (`storeId`) must be injected into all subsequent Storefront API calls (e.g., `/stores/:storeId/products`).
 - **Error Cases**: If the slug is invalid, the backend returns 404. The frontend must display a "Store Not Found" view.
 
 ## 4. Customer Flow
@@ -92,14 +93,16 @@ The backend issues two distinct JWTs:
   - **Payload**: `{ quantity: integer }`.
 
 **Inventory Behavior:**
+
 - The Backend is the sole authority on inventory.
-- **Stock Validation**: During checkout, the backend natively protects against overselling. 
+- **Stock Validation**: During checkout, the backend natively protects against overselling.
 - **Out Of Stock**: If an order exceeds available stock, the backend rejects it with a `400 Bad Request` and returns an exact breakdown in `errors.details.items`.
 - Inventory is atomically deducted upon order placement and atomically restored upon cancellation.
 
 ## 8. Order APIs
 
 **Merchant APIs:**
+
 - `GET /stores/:storeId/orders`
   - **Purpose**: List store orders.
   - **Auth**: Platform JWT + `MANAGE_ORDERS`.
@@ -113,6 +116,7 @@ The backend issues two distinct JWTs:
   - **Status Fields**: `PLACED`, `PROCESSING`, `READY`, `COMPLETED`, `CANCELLED`.
 
 **Customer APIs:**
+
 - `POST /stores/:storeId/orders` (Checkout)
   - **Auth**: Customer JWT.
   - **Payload**: `{ deliveryAddress, items: [{ productId, quantity }] }`. (Note: PII is snapshotted from the JWT).
@@ -132,7 +136,7 @@ The backend issues two distinct JWTs:
   - **Auth**: Platform JWT + `APPROVE_STORE`.
   - **Purpose**: Reject a request.
 
-*(Note: Pending and Rejected states are the only states you can act upon).*
+_(Note: Pending and Rejected states are the only states you can act upon)._
 
 ## 10. Store Members
 
@@ -171,14 +175,14 @@ The following capabilities have been permanently removed from the backend archit
 
 ## 15. Capability Matrix
 
-| Capability | Backend Status | Frontend Required |
-| :--- | :--- | :--- |
-| Customer Registration | ✅ | Yes |
-| Customer Login | ✅ | Yes |
-| Customer Profile / Hydration | ✅ | Yes |
-| Customer Checkout | ✅ | Yes |
-| Customer Orders | ✅ | Yes |
-| Guest Checkout | ❌ Deprecated | Remove |
-| Guest Tracking | ❌ Deprecated | Remove |
-| Store Members | ❌ Not Implemented | Coming Soon |
-| Platform Analytics | ❌ Not Implemented | Coming Soon |
+| Capability                   | Backend Status     | Frontend Required |
+| :--------------------------- | :----------------- | :---------------- |
+| Customer Registration        | ✅                 | Yes               |
+| Customer Login               | ✅                 | Yes               |
+| Customer Profile / Hydration | ✅                 | Yes               |
+| Customer Checkout            | ✅                 | Yes               |
+| Customer Orders              | ✅                 | Yes               |
+| Guest Checkout               | ❌ Deprecated      | Remove            |
+| Guest Tracking               | ❌ Deprecated      | Remove            |
+| Store Members                | ❌ Not Implemented | Coming Soon       |
+| Platform Analytics           | ❌ Not Implemented | Coming Soon       |

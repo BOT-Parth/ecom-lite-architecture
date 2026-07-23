@@ -129,16 +129,18 @@ This document serves as the source of truth for the frontend team regarding the 
    Response Body: { "status": "ok", "message": "up and running" }
    RBAC: Public. Used for EC2 ALB target group health checks.
    Backend Features Status for Frontend Implementation
-8. Backend features fully implemented but NOT consumed by the frontend: (Note: As the exact frontend state is unknown to the backend audit without inspecting frontend code, it is assumed the following recent milestones are unconsumed)
-
+8. Backend features fully implemented but NOT consumed by the frontend: 
 Store Requests (creation and admin approval)
 Store Settings modifications
 Categories & Products CRUD
 Inventory patching
-Orders (checkout and management)
 
-2. Backend features partially consumed:
-Authentication (login/register likely consumed, but JWT handling for tenant scoped requests /stores/:storeId/* requires frontend implementation). 
+2. Backend features fully consumed:
+Customer Accounts (Registration, Login, Context Hydration)
+Orders (Authenticated Checkout and History Tracking)
+
+3. Backend features partially consumed:
+Platform Authentication (login/register likely consumed, but Store Dashboard features need further implementation).
 
 3. Backend features intentionally deferred:
 Cart Persistence, Payment Gateway, Shipping, Reviews, Wishlist are intentionally deferred.

@@ -213,6 +213,12 @@ React Context providers.
 
 ---
 
+## constants/
+
+Shared constants, such as API endpoints.
+
+---
+
 ## utils/
 
 Shared helper functions.
@@ -249,4 +255,4 @@ Never place files based on convenience.
 
 
 ---
-*Last verified against code on 2026-07-19: Verified architectural principles against current codebase.*
+*Last verified against code on 2026-07-23: Verified architectural principles against current codebase.*
